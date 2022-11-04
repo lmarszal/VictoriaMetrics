@@ -1,6 +1,7 @@
 package fasttime
 
 import (
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"sync/atomic"
 	"time"
 )
@@ -12,17 +13,29 @@ func init() {
 		for tm := range ticker.C {
 			t := uint64(tm.Unix())
 			atomic.StoreUint64(&currentTimestamp, t)
+			// DEBUG log mocked timestamp every 10s so that we know "when" we are
+			{
+				tmp := UnixTimestamp()
+				if tmp%10 == 0 {
+					logger.Infof("Now is %d", tmp)
+				}
+			}
 		}
 	}()
 }
 
 var currentTimestamp = uint64(time.Now().Unix())
 
+// DEBUG capture app start time for time traveling
+var debugStartTimestamp = uint64(time.Now().Unix())
+
 // UnixTimestamp returns the current unix timestamp in seconds.
 //
 // It is faster than time.Now().Unix()
 func UnixTimestamp() uint64 {
-	return atomic.LoadUint64(&currentTimestamp)
+	// DEBUG time travel - simulate that the app started at 2022-10-27 23:59:45 UTC (1666915185)
+	return atomic.LoadUint64(&currentTimestamp) - debugStartTimestamp + 1666915185
+	//return atomic.LoadUint64(&currentTimestamp)
 }
 
 // UnixDate returns date from the current unix timestamp.

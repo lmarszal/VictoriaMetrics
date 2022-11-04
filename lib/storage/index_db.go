@@ -2794,6 +2794,8 @@ const (
 )
 
 func (is *indexSearch) createPerDayIndexes(date, metricID uint64, mn *MetricName) error {
+	// DEBUG log that we create per-day index
+	logger.Infof("createPerDayIndexes(date: %d, metricID: %d)", date, metricID)
 	ii := getIndexItems()
 	defer putIndexItems(ii)
 

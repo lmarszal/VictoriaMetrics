@@ -692,7 +692,8 @@ func (s *Storage) startNextDayMetricIDsUpdater() {
 	}()
 }
 
-var currHourMetricIDsUpdateInterval = time.Second * 10
+// DEBUG: change frequency so that we can more easily make a command between the updates
+var currHourMetricIDsUpdateInterval = time.Second * 30
 
 func (s *Storage) currHourMetricIDsUpdater() {
 	ticker := time.NewTicker(currHourMetricIDsUpdateInterval)
@@ -2000,8 +2001,12 @@ func (s *Storage) updatePerDateData(rows []rawRow, mrs []*MetricRow) error {
 						pendingNextDayMetricIDs = append(pendingNextDayMetricIDs, metricID)
 					}
 				}
+				// DEBUG log continue on HourMetricIDs cache
+				logger.Infof("continue on HourMetricIDs cache")
 				continue
 			}
+			// DEBUG log append to pendingHourEntries
+			logger.Infof("append to pendingHourEntries")
 			pendingHourEntries = append(pendingHourEntries, metricID)
 			if date == hmPrevDate && hmPrev.m.Has(metricID) {
 				// The metricID is already registered for the current day on the previous hour.
@@ -2031,6 +2036,8 @@ func (s *Storage) updatePerDateData(rows []rawRow, mrs []*MetricRow) error {
 		s.pendingHourEntriesLock.Unlock()
 	}
 	if len(pendingDateMetricIDs) == 0 {
+		// DEBUG log exit on zero pendingDateMetricIDs
+		logger.Infof("exit on zero pendingDateMetricIDs")
 		// Fast path - there are no new (date, metricID) entires in rows.
 		return nil
 	}
@@ -2349,6 +2356,16 @@ func (s *Storage) updateCurrHourMetricIDs() {
 		hour:   hour,
 		isFull: isFull,
 	}
+	// DEBUG log hourMetricIDs index on update
+	{
+		ids := make([]uint64, 0, m.Len())
+		m.ForEach(func(part []uint64) bool {
+			ids = append(ids, part...)
+			return true
+		})
+		logger.Infof("hourMetricIDs{m:%+v, hour:%d}", ids, hour)
+	}
+	// END DEBUG
 	s.currHourMetricIDs.Store(hmNew)
 	if hm.hour != hour {
 		s.prevHourMetricIDs.Store(hm)
